@@ -16,7 +16,7 @@ def get_hotel(
         id: int | None = Query(default=None, description="ID города"),
         title: str | None = Query(default=None, description="Название города")
 ):
-    ct = [hotel for hotel in data_db if id == hotel['id'] or title == hotel['title']]
+    ct = [city for city in data_db if id == city['id'] or title == city['title']]
     return ct
 
 
@@ -33,9 +33,9 @@ def update_hotel(data_db: list,
                  name: str):
     for data in data_db:
         if data['id'] == hotel_id:
-            if title is not None:
+            if data['title'] is not None:
                 data['title'] = title
-            if name is not None:
+            if data['name'] is not None:
                 data['name'] = name
             return {"status": "ok"}
         return {"error": "all fields are required"}
@@ -54,8 +54,8 @@ def create_hotel_put(
 @app.patch("/hotels/{hotels_id}")
 def create_hotel_patch(
         hotels_id: int,
-        title: str | None = Query(default=None, description='Название города'),
-        name: str | None = Query(default=None,description='какой-то идентификатор')
+        title: str | None = Query(description='Название города'),
+        name: str | None = Query(description='какой-то идентификатор')
 ):
     return update_hotel(data_db, hotels_id, title, name)
 
