@@ -22,8 +22,8 @@ def get_hotels(
 
         id: int | None = Query(default=None, description="ID отеля"),
         title: str | None = Query(default=None, description="Название отеля"),
-        page: int | None = Query(default=None, description="Номер страницы"),
-        per_page: int | None = Query(default=None, description="Количество отелей на странице")
+        page: int | None = Query(default=1, description="Номер страницы"),
+        per_page: int | None = Query(default=3, description="Количество отелей на странице")
 
 ):
 
