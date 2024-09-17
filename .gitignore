@@ -163,3 +163,4 @@ cython_debug/
 /lessons/LessonFastApi/
 /lessons/
 !/lessons/
+!/lessons/postgress/

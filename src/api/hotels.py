@@ -1,9 +1,10 @@
 from fastapi import Query, APIRouter
-from schemas.hotels import HotelPatch, HotelPUT
+
+
+from src.api.dependenies import PaginationDep
+from src.schemas.hotels import Hotel
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
-
-
 
 data_db = [
     {"id": 1, "title": "Sochi", "name": "sochi"},
@@ -15,28 +16,25 @@ data_db = [
     {"id": 7, "title": "Санкт-Петербург", "name": "spb"},
 ]
 
+
 @router.get("",
             summary="Получение всех отелей",
             description="Если не ввели параметры, то получаем список отелей")
 def get_hotels(
-
-        id: int | None = Query(default=None, description="ID отеля"),
+        data_hotel: PaginationDep,
+        hotel_id: int | None = Query(default=None, description="ID отеля"),
         title: str | None = Query(default=None, description="Название отеля"),
-        page: int | None = Query(default=1, description="Номер страницы"),
-        per_page: int | None = Query(default=3, description="Количество отелей на странице")
-
 ):
-
     hotels_ = []
     for hotel in data_db:
-        if id and hotel['id'] != id:
+        if hotel_id and hotel['id'] != hotel_id:
             continue
         if title and hotel['title'] != title:
             continue
         hotels_.append(hotel)
-    if not page and not per_page:
+    if not data_hotel.page and not data_hotel.per_page:
         return hotels_
-    return hotels_[(page - 1) * per_page: page * per_page]
+    return hotels_[data_hotel.per_page * (data_hotel.page - 1):][:data_hotel.per_page]
 
 
 @router.delete("/{hotels_id}",
@@ -51,7 +49,7 @@ def delete_hotel(hotel_id: int):
 @router.post('/',
              summary="Создание отеля")
 def create_hotel(
-        data_hotel: HotelPatch
+        data_hotel: Hotel
 ):
     data_db.append(
         {'id': data_db[-1]['id'] + 1,
@@ -68,7 +66,7 @@ def create_hotel(
             в теле запроса")
 def create_hotel_put(
         hotels_id: int,
-        data_hotel: HotelPUT
+        data_hotel: Hotel
 
 ):
     global data_db
@@ -83,7 +81,7 @@ def create_hotel_put(
               description="Параметры title и name не обязательны, если передали, то меняем его значение")
 def create_hotel_patch(
         hotels_id: int,
-        data_hotel: HotelPatch
+        data_hotel: Hotel
 ):
     global data_db
     hotel = [hotel for hotel in data_db if hotel['id'] == hotels_id][0]
