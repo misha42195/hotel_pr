@@ -6,6 +6,8 @@ from src.schemas.hotels import Hotel
 from src.database import async_session_maker
 from src.models.hotels import HotelsOrm
 from src.database import engine
+from repositories.hotels import HotelsRepository
+
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
@@ -23,19 +25,28 @@ async def get_hotels(
 ):
     per_page = data_hotel.per_page or 5
     async with async_session_maker() as session:
-        query = select(HotelsOrm)
-        if title:
-            query = query.filter(HotelsOrm.title.ilike(f"%{title}%"))
-        if location:
-            query = query.filter(HotelsOrm.title.ilike(f"%{location}%"))
-        query = (
-            query
-            .limit(per_page)
-            .offset(per_page * (data_hotel.page - 1))
+        return await HotelsRepository(session).get_all(
+            title=title,
+            location=location,
+            limit=per_page,
+            offset=(per_page * (data_hotel.page - 1))
         )
-        result = await session.execute(query)
-        result = result.scalars().all()
-        return result
+    # per_page = data_hotel.per_page or 5
+    # async with async_session_maker() as session:
+    #     query = select(HotelsOrm)
+    #     if title:
+    #         query = query.filter(HotelsOrm.title.ilike(f"%{title}%"))
+    #     if location:
+    #         query = query.filter(HotelsOrm.location.ilike(f"%{location}%"))
+    #     query = (
+    #         query
+    #         .limit(per_page)
+    #         .offset(per_page * (data_hotel.page - 1))
+    #     )
+    #     print(query.compile(engine, compile_kwargs={"literal_binds":True}))
+    #     result = await session.execute(query)
+    #     result = result.scalars().all()
+    #     return result
 
 
     # hotels_[data_hotel.per_page * (data_hotel.page - 1):][:data_hotel.per_page]
@@ -74,13 +85,17 @@ async def create_hotel(hotel_data: Hotel = Body(
     })
 ):
     async with async_session_maker() as session:
-        add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
-        print(add_hotel_stmt)
-        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds":True}))
-        await session.execute(add_hotel_stmt)
+        hotel = await HotelsRepository(session).add_hotel(
+            title=hotel_data.title,
+            location=hotel_data.location,
+        )
+        # add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
+        #
+        # print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds":True}))
+        # await session.execute(add_hotel_stmt)
         await session.commit()
 
-    return {"status": "ok"}
+    return {"status": "ok","data": hotel}
 
 
 @router.put(
