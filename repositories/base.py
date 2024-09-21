@@ -1,5 +1,6 @@
 from sqlalchemy import select, insert
 from src.database import engine
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from src.models.hotels import HotelsOrm
 
@@ -22,18 +23,14 @@ class BaseRepository:
         result = await self.session.execute(query)
         return result.scalars().one_or_none()
 
-    async def add_hotel(
-            self,
-            title,
-            location
-    ):
-        add_hotel_stmt = (
+    async def add(self,data: BaseModel):
+        add_data_stmt = (
             insert(self.model)
-            .values(title=title, location=location)
+            .values(**data.model_dump())
             .returning(self.model)
         )
-        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
-        result = await self.session.execute(add_hotel_stmt)
-        hotel = result.scalars().all()
+        print(add_data_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+        result = await self.session.execute(add_data_stmt)
+        hotel = result.scalars().one()
         print(hotel)
         return hotel

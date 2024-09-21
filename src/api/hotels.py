@@ -85,10 +85,7 @@ async def create_hotel(hotel_data: Hotel = Body(
     })
 ):
     async with async_session_maker() as session:
-        hotel = await HotelsRepository(session).add_hotel(
-            title=hotel_data.title,
-            location=hotel_data.location,
-        )
+        hotel = await HotelsRepository(session).add(hotel_data)
         # add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
         #
         # print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds":True}))
