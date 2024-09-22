@@ -1,23 +1,18 @@
 from fastapi import Query, APIRouter, Body
-from sqlalchemy import insert, select
 
 from src.api.dependenies import PaginationDep
 from src.schemas.hotels import Hotel
 from src.database import async_session_maker
-from src.models.hotels import HotelsOrm
-from src.database import engine
-from repositories.hotels import HotelsRepository
+from src.repositories.hotels import HotelsRepository
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
-
-
 
 
 @router.get(
     "",
     summary="Получение всех отелей",
     description="Если не ввели параметры, то получаем список отелей"
-    )
+)
 async def get_hotels(
         data_hotel: PaginationDep,
         title: str | None = Query(default=None, description="Название отеля"),
@@ -48,7 +43,6 @@ async def get_hotels(
     #     result = result.scalars().all()
     #     return result
 
-
     # hotels_[data_hotel.per_page * (data_hotel.page - 1):][:data_hotel.per_page]
 
 
@@ -56,16 +50,15 @@ async def get_hotels(
     "/{hotels_id}",
     summary="Удаление отеля",
     description="Для удаления введите идентификатор отеля"
-    )
-def delete_hotel(hotel_id: int):
-    global data_db
-    data_db = [hotel for hotel in data_db if hotel_id != hotel['id']]
-    return {'status': 'ok'}
+)
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).delete(id=hotel_id)
+        await session.commit()
+        return {'status': 'ok'}
 
 
-@router.post(
-    '',
-    summary="Создание отеля")
+@router.post("", summary="Создание отеля")
 async def create_hotel(hotel_data: Hotel = Body(
     openapi_examples={
         "1": {
@@ -82,7 +75,8 @@ async def create_hotel(hotel_data: Hotel = Body(
                 "location": "ул. Шейха, 2",
             }
         }
-    })
+    }
+)
 ):
     async with async_session_maker() as session:
         hotel = await HotelsRepository(session).add(hotel_data)
@@ -92,7 +86,7 @@ async def create_hotel(hotel_data: Hotel = Body(
         # await session.execute(add_hotel_stmt)
         await session.commit()
 
-    return {"status": "ok","data": hotel}
+    return {"status": "ok", "data": hotel}
 
 
 @router.put(
@@ -100,15 +94,12 @@ async def create_hotel(hotel_data: Hotel = Body(
     summary="Полное обновление данных",
     description="Для обновления необходимо ввести оба параметра \
             в теле запроса"
-    )
-def create_hotel_put(
-        hotels_id: int,
-        data_hotel: Hotel
-):
-    global data_db
-    hotel = [hotel for hotel in data_db if hotel['id'] == hotels_id][0]
-    hotel['title'] = data_hotel.title
-    hotel['name'] = data_hotel.name
+)
+async def create_hotel_put(hotels_id: int, hotel_data: Hotel):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edite(hotel_data, id=hotels_id)
+        await session.commit()
+
     return {"status": "ok"}
 
 
@@ -116,7 +107,7 @@ def create_hotel_put(
     "/{hotels_id}",
     summary="Частичное обновление данных",
     description="Параметры title и name не обязательны, если передали, то меняем его значение"
-    )
+)
 def create_hotel_patch(
         hotels_id: int,
         data_hotel: Hotel
