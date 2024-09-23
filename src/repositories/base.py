@@ -49,3 +49,12 @@ class BaseRepository:
     async def delete(self, **filter_by):
         delete_data_stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_data_stmt)
+
+    async def get_one(self,id):
+        query = select(self.model)
+
+        query = query.filter(self.model.id == id)
+        print(query.compile(engine, compile_kwargs={"literal_binds": True}))
+        result = await self.session.execute(query)
+        hotel = result.scalars().one()
+        return hotel

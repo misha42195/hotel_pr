@@ -89,6 +89,14 @@ async def create_hotel(hotel_data: Hotel = Body(
     return {"status": "ok", "data": hotel}
 
 
+@router.get("/{hotel_id/}", summary="Получение одного отеля по ID")
+async def get_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).get_one(id=hotel_id)
+        await session.commit()
+        return {"status": "ok", "data": hotel}
+
+
 @router.put(
     "/{hotels_id}",
     summary="Полное обновление данных",
