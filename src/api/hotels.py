@@ -1,9 +1,10 @@
 from fastapi import Query, APIRouter, Body
 
 from src.api.dependenies import PaginationDep
-from src.schemas.hotels import Hotel
+from src.schemas.hotels import Hotel, HotelPATCH
 from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepository
+from src.schemas.hotels import HotelAdd
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -59,7 +60,7 @@ async def delete_hotel(hotel_id: int):
 
 
 @router.post("", summary="Создание отеля")
-async def create_hotel(hotel_data: Hotel = Body(
+async def create_hotel(hotel_data: HotelAdd = Body(
     openapi_examples={
         "1": {
             "summary": "Сочи",
@@ -80,10 +81,6 @@ async def create_hotel(hotel_data: Hotel = Body(
 ):
     async with async_session_maker() as session:
         hotel = await HotelsRepository(session).add(hotel_data)
-        # add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
-        #
-        # print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds":True}))
-        # await session.execute(add_hotel_stmt)
         await session.commit()
 
     return {"status": "ok", "data": hotel}
@@ -92,7 +89,7 @@ async def create_hotel(hotel_data: Hotel = Body(
 @router.get("/{hotel_id/}", summary="Получение одного отеля по ID")
 async def get_hotel(hotel_id: int):
     async with async_session_maker() as session:
-        hotel = await HotelsRepository(session).get_one(id=hotel_id)
+        hotel = await HotelsRepository(session).get_one_or_none(id=hotel_id)
         await session.commit()
         return {"status": "ok", "data": hotel}
 
@@ -103,7 +100,7 @@ async def get_hotel(hotel_id: int):
     description="Для обновления необходимо ввести оба параметра \
             в теле запроса"
 )
-async def create_hotel_put(hotels_id: int, hotel_data: Hotel):
+async def create_hotel_put(hotels_id: int, hotel_data: HotelAdd):
     async with async_session_maker() as session:
         await HotelsRepository(session).edite(hotel_data, id=hotels_id)
         await session.commit()
@@ -116,14 +113,12 @@ async def create_hotel_put(hotels_id: int, hotel_data: Hotel):
     summary="Частичное обновление данных",
     description="Параметры title и name не обязательны, если передали, то меняем его значение"
 )
-def create_hotel_patch(
+async def create_hotel_patch(
         hotels_id: int,
-        data_hotel: Hotel
+        data_hotel: HotelPATCH
 ):
-    global data_db
-    hotel = [hotel for hotel in data_db if hotel['id'] == hotels_id][0]
-    if data_hotel.title:
-        hotel['title'] = data_hotel.title
-    if data_hotel.name:
-        hotel['name'] = data_hotel.name
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edite(data_hotel,id=hotels_id)
+        await session.commit()
+
     return {"status": "ok"}

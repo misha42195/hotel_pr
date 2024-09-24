@@ -3,10 +3,12 @@ from sqlalchemy import select
 from src.repositories.base import BaseRepository
 from src.database import engine
 from src.models.hotels import HotelsOrm
+from src.schemas.hotels import Hotel
 
 
 class HotelsRepository(BaseRepository):
     model = HotelsOrm
+    schema = Hotel
 
     async def get_all(self,
                       title,
