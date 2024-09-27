@@ -4,8 +4,6 @@ from src.database import engine
 from pydantic import BaseModel
 
 
-
-
 class BaseRepository:
     model = None
     schema: BaseModel = None
@@ -18,7 +16,7 @@ class BaseRepository:
         result = await self.session.execute(query)
         print(query.compile(engine, compile_kwargs={"literal_binds": True}))
 
-        return [self.schema.model_validate(hotel,from_attributes=True) for hotel in result.scalars().all()]
+        return [self.schema.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
 
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)
@@ -26,9 +24,7 @@ class BaseRepository:
         obj = result.scalars().one_or_none()
         if obj is None:
             return None
-        return self.schema.model_validate(obj,from_attributes=True)
-
-
+        return self.schema.model_validate(obj, from_attributes=True)
 
     async def add(self, data: BaseModel):
         add_data_stmt = (
@@ -40,7 +36,7 @@ class BaseRepository:
         result = await self.session.execute(add_data_stmt)
         hotel = result.scalars().one()
         print(hotel)
-        return self.schema.model_validate(hotel,from_attributes=True)
+        return self.schema.model_validate(hotel, from_attributes=True)
 
     async def edite(self, data: BaseModel, **filter_by) -> None:
         update_data_stmt = (
@@ -55,5 +51,3 @@ class BaseRepository:
     async def delete(self, **filter_by):
         delete_data_stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_data_stmt)
-
-
