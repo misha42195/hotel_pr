@@ -24,3 +24,8 @@ class User(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
+
+class UserWithHashedPassword(User):
+    hashed_password: str
+    class Config:
+        orm_mode = True
