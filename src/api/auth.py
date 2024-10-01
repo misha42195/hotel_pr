@@ -4,53 +4,62 @@ import jwt
 from fastapi import APIRouter, HTTPException
 from fastapi import Response
 from passlib.context import CryptContext
+from starlette.requests import Request
 
+from src.config import settings
 from src.database import async_session_maker
 from src.repositories.users import UsersRepository
 from src.schemas.users import UserRequestAdd, UserAdd, User
+from src.service.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Аутентификация и авторизация"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-@router.post("/login")
-async def login_user(data: UserRequestAdd, response: Response):
+@router.post("/login",summary="Авторизация пользователя")
+async def login_user(
+        data: UserRequestAdd,
+        response: Response
+):
     async with async_session_maker() as session:
         user = await UsersRepository(session).get_user_with_hashed_password(email=data.email)
         if not user:
-            raise HTTPException(status_code=401,detail="Пользователь с такой почтой не зарегистрирован")
-        if not verify_password(data.password,user.hashed_password):
-            raise HTTPException(status_code=401,detail="Неправильный пароль")
-        access_token = create_access_token({"user_id":user.id})
-        response.set_cookie("access_token",access_token)
-        return {"access_token":access_token}
-
+            raise HTTPException(status_code=401, detail="Пользователь с такой почтой не зарегистрирован")
+        if not AuthService().verify_password(data.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Неправильный пароль")
+        access_token = AuthService().create_access_token({"user_id": user.id})
+        response.set_cookie("access_token", access_token)
+        return {"access_token": access_token}
 
 
 @router.post("/register", summary="Регистрация пользователя")
-async def register(data: UserRequestAdd):
-    hashed_password = pwd_context.hash(data.password)
+async def register_user(
+        data: UserRequestAdd
+):  # получаем данные на регистрацию
+    hash_password = AuthService().hashed_password(data.password)  # преобразуем значение входящего пароля в хеш-значение
+    print("пароль=", hash_password)
+    new_user_data = UserAdd(
+        nickname=data.nickname,
+        email=data.email,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        hashed_password=hash_password  # пароль получим из хеш-функции
+    )
     async with async_session_maker() as session:
-        new_user_data = UserAdd(
-            nickname=data.nickname,
-            email=data.email,
-            first_name=data.first_name,
-            last_name=data.last_name,
-            hashed_password=hashed_password
-        )
-        user = await UsersRepository(session).add(data=new_user_data)
+        user = await UsersRepository(session).add(new_user_data)
         await session.commit()
-    return {"status": "ok", "user": user}
+    return {"status": "ok" , "user": user}
+
+
+@router.get("/only_auth")
+async def only_auth(
+        request: Request
+):
+    # что бы получить значение токена access_token
+    # access_token = request # <starlette.requests.Request object at 0x7fb163dac110>
+    # access_token = request.cookies # {
+    # 'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyNCwiZXhwIjoxNzI3Nzc3Mzc0fQ.uiMk_SRGtRffKOh8tLk7oAJZWc7en1kXBXpq3O1NoZA'
+    # }
+
+    access_token = request.cookies.get("access_token") # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyNCwiZXhwIjoxNzI3Nzc3Mzc0fQ.uiMk_SRGtRffKOh8tLk7oAJZWc7en1kXBXpq3O1NoZA
+
+    print(access_token)

@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
+
 
 # схема для входящих параметров пользователя
 class UserRequestAdd(BaseModel):
@@ -25,7 +26,7 @@ class User(BaseModel):
     first_name: str
     last_name: str
 
+    model_config = ConfigDict(from_attributes=True)
+
 class UserWithHashedPassword(User):
     hashed_password: str
-    class Config:
-        orm_mode = True

@@ -3,6 +3,8 @@ from sqlalchemy import select, insert, update, delete
 from src.database import engine
 from pydantic import BaseModel
 
+from src.schemas.users import User
+
 
 class BaseRepository:
     model = None
@@ -34,9 +36,9 @@ class BaseRepository:
         )
         print(add_data_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(add_data_stmt)
-        hotel = result.scalars().one()
-        print(hotel)
-        return self.schema.model_validate(hotel, from_attributes=True)
+        model = result.scalars().one()
+        print("model= ",model)
+        return self.schema.model_validate(model, from_attributes=True)
 
     async def edite(self, data: BaseModel, **filter_by) -> None:
         update_data_stmt = (
