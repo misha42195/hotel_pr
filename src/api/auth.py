@@ -15,7 +15,7 @@ from src.service.auth import AuthService
 router = APIRouter(prefix="/auth", tags=["Аутентификация и авторизация"])
 
 
-@router.post("/login",summary="Авторизация пользователя")
+@router.post("/login", summary="Авторизация пользователя")
 async def login_user(
         data: UserRequestAdd,
         response: Response
@@ -47,19 +47,17 @@ async def register_user(
     async with async_session_maker() as session:
         user = await UsersRepository(session).add(new_user_data)
         await session.commit()
-    return {"status": "ok" , "user": user}
+    return {"status": "ok", "user": user}
 
 
 @router.get("/only_auth")
 async def only_auth(
         request: Request
 ):
-    # что бы получить значение токена access_token
-    # access_token = request # <starlette.requests.Request object at 0x7fb163dac110>
-    # access_token = request.cookies # {
-    # 'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyNCwiZXhwIjoxNzI3Nzc3Mzc0fQ.uiMk_SRGtRffKOh8tLk7oAJZWc7en1kXBXpq3O1NoZA'
-    # }
-
-    access_token = request.cookies.get("access_token") # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyNCwiZXhwIjoxNzI3Nzc3Mzc0fQ.uiMk_SRGtRffKOh8tLk7oAJZWc7en1kXBXpq3O1NoZA
-
-    print(access_token)
+    access_token = request.cookies.get("access_token")
+    data = AuthService().decode_token(access_token)
+    user_id = data["user_id"]
+    async with async_session_maker() as session:
+        user = await UsersRepository(session).get_one_or_none(id=user_id)
+        print(user)
+    return user
