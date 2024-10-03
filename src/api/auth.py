@@ -6,6 +6,7 @@ from fastapi import Response
 from passlib.context import CryptContext
 from starlette.requests import Request
 
+from src.api.dependenies import UserIdDep
 from src.config import settings
 from src.database import async_session_maker
 from src.repositories.users import UsersRepository
@@ -51,13 +52,14 @@ async def register_user(
 
 
 @router.get("/only_auth")
-async def only_auth(
-        request: Request
-):
-    access_token = request.cookies.get("access_token")
-    data = AuthService().decode_token(access_token)
-    user_id = data["user_id"]
+async def only_auth(user_id: UserIdDep):
     async with async_session_maker() as session:
         user = await UsersRepository(session).get_one_or_none(id=user_id)
-        print(user)
+
     return user
+
+
+@router.post("/logout", summary="Выход из системы")
+def logout_user(response: Response):
+    response.delete_cookie(key="access_token")
+    return {"status": "ok"}
