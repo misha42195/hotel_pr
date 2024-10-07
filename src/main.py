@@ -13,7 +13,7 @@ app = FastAPI()  # создаем экземпляр приложения
 # импортируем объект router как router_hotels
 from src.api.hotels import router as router_hotels
 from src.api.auth import router as user_router
-from src.api.rooms import router as room_router
+from api.rooms import router as room_router
 from src.config import settings
 
 
