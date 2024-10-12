@@ -12,6 +12,7 @@ from src.database import async_session_maker
 from src.repositories.users import UsersRepository
 from src.schemas.users import UserRequestAdd, UserAdd, User
 from src.service.auth import AuthService
+from src.api.dependenies import DBDep
 
 router = APIRouter(prefix="/auth", tags=["Аутентификация и авторизация"])
 
@@ -19,22 +20,23 @@ router = APIRouter(prefix="/auth", tags=["Аутентификация и авт
 @router.post("/login", summary="Авторизация пользователя")
 async def login_user(
         data: UserRequestAdd,
-        response: Response
+        response: Response,
+        db: DBDep
 ):
-    async with async_session_maker() as session:
-        user = await UsersRepository(session).get_user_with_hashed_password(email=data.email)
-        if not user:
-            raise HTTPException(status_code=401, detail="Пользователь с такой почтой не зарегистрирован")
-        if not AuthService().verify_password(data.password, user.hashed_password):
-            raise HTTPException(status_code=401, detail="Неправильный пароль")
-        access_token = AuthService().create_access_token({"user_id": user.id})
-        response.set_cookie("access_token", access_token)
-        return {"access_token": access_token}
+    user = await db.users.get_user_with_hashed_password(email=data.email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Пользователь с такой почтой не зарегистрирован")
+    if not AuthService().verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Неправильный пароль")
+    access_token = AuthService().create_access_token({"user_id": user.id})
+    response.set_cookie("access_token", access_token)
+    return {"access_token": access_token}
 
 
 @router.post("/register", summary="Регистрация пользователя")
 async def register_user(
-        data: UserRequestAdd
+        data: UserRequestAdd,
+        db: DBDep
 ):  # получаем данные на регистрацию
     hash_password = AuthService().hashed_password(data.password)  # преобразуем значение входящего пароля в хеш-значение
     print("пароль=", hash_password)
@@ -45,16 +47,16 @@ async def register_user(
         last_name=data.last_name,
         hashed_password=hash_password  # пароль получим из хеш-функции
     )
-    async with async_session_maker() as session:
-        user = await UsersRepository(session).add(new_user_data)
-        await session.commit()
+    user = await db.users.add(new_user_data)
+    await db.commit()
     return {"status": "ok", "user": user}
 
 
 @router.get("/only_auth")
-async def only_auth(user_id: UserIdDep):
-    async with async_session_maker() as session:
-        user = await UsersRepository(session).get_one_or_none(id=user_id)
+async def only_auth(
+        user_id: UserIdDep,
+        db: DBDep):
+    user = await db.users.get_one_or_none(id=user_id)
 
     return user
 
