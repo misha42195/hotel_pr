@@ -1,10 +1,12 @@
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.mypy import from_attributes_callback
 
 
 # схема запроса получения даты
-class BookingResponseDateAdd(BaseModel):
+class BookingRequestAdd(BaseModel):
+    room_id: int
     date_from: date
     date_to: date
 
@@ -20,3 +22,5 @@ class BookingAdd(BaseModel):
 
 class Booking(BookingAdd):
     id: int
+
+    model_config = ConfigDict(from_attributes=True)

@@ -10,28 +10,19 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 app = FastAPI()  # создаем экземпляр приложения
 
-# импортируем объект router как router_hotels
+# импортируем объекты router
 from src.api.hotels import router as router_hotels
-from src.api.auth import router as user_router
-from src.api.rooms import router as room_router
-from src.api.bookings import router as booking_router
-from src.config import settings
+from src.api.auth import router as router_user
+from src.api.rooms import router as router_room
+from src.api.bookings import router as router_booking
 
-# добавляем в приложение роутер для отелей с префиксом /auth
-app.include_router(user_router)
+app.include_router(router_user)
 
-# добавляем в приложение роутер для отелей с префиксом /hotels
 app.include_router(router_hotels)
 
-# добавляем в приложение роутер для комнат с префиксом /hotels
-app.include_router(room_router)
+app.include_router(router_room)
 
-# добавляем в прилодение роутер бронирования
-app.include_router(booking_router)
-
-from src.database import del_rooms
-import asyncio
+app.include_router(router_booking)
 
 if __name__ == "__main__":
-    # asyncio.run(del_rooms())
     uvicorn.run("main:app", reload=True)

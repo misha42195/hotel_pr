@@ -1,6 +1,3 @@
-from requests import session
-from sqlalchemy.orm import Session
-
 from repositories.bookings import BookingsRepository
 from src.repositories.hotels import HotelsRepository
 from src.repositories.rooms import RoomsRepository
