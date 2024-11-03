@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from fastapi.params import Query
 
 from api.dependenies import DBDep
+from schemas.facilities import RoomFacilityAdd
 from src.database import async_session_maker
 from fastapi import Body
 
@@ -45,47 +46,29 @@ async def get_room(
 async def create_room(
         hotel_id: int,
         db: DBDep,
-        room_data: RoomResponseAdd = Body(openapi_examples={
-            "1": {
-                "summary": "Стандарт",
-                "value": {
-                    "hotel_id": 54,
-                    "title": "Сатндартный номер",
-                    "description": "Стандартный двухместный номер",
-                    "price": 4000,
-                    "quantity": 20,
-                }
-            },
-            "2": {
-                "summary": "Премиум",
-                "value": {
-                    "hotel_id": 54,
-                    "title": "Премиму номер",
-                    "description": "Премиальный номер",
-                    "price": 10000,
-                    "quantity": 3,
-                }
-            }
-        }
-        )):
+        room_data: RoomResponseAdd = Body()
+):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
-    await db.rooms.add(data=_room_data)
-    await db.rooms.commit()
+    room = await db.rooms.add(data=_room_data)
 
-    return {"stataus": "ok"}
+    room_facility_data = [RoomFacilityAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids]
+    await db.rooms_facilities.add_bulk(room_facility_data)
+    await db.commit()
+
+    return {"status": "ok", "room": room}
 
 
 @router.put("/{hotel_id}/rooms/{room_id}", summary="Полное изменение номера")
 async def full_edit_room(
         hotel_id: int,
-        roon_id: int,
+        room_id: int,
         db: DBDep,
         room_data: RoomResponseAdd
 ):
     _room_data = RoomPut(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edite(
         data=_room_data,
-        id=roon_id)
+        id=room_id)
     await db.rooms.commit()
 
     return {"status": "ok"}
