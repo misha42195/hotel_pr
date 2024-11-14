@@ -1,8 +1,8 @@
 from fastapi import APIRouter
-from fastapi.params import Query, Body
+from fastapi.params import Body
 
 from api.dependenies import DBDep
-from schemas.facilities import Facilities, FacilitiesAdd
+from schemas.facilities import FacilitiesAdd
 
 router = APIRouter(prefix="/facilities", tags=["получение удобств"])
 
@@ -10,13 +10,13 @@ router = APIRouter(prefix="/facilities", tags=["получение удобст�
 @router.get("", summary="Получение удобств")
 async def get_facilities(
         db: DBDep,
-        title: str | None = Query(None, examples={"title": "Интернет"})
+        # title: str | None = Query(None, examples={"title": "Интернет"})
 ):
-    return await db.facilities.get_all(title=title)
+    return await db.facilities.get_all()
 
 
 @router.post("", summary="создание удобств")
-async def create_facilitt(
+async def create_facility(
         db: DBDep,
         facility_date: FacilitiesAdd = Body(openapi_examples={
             "1": {

@@ -3,9 +3,7 @@ from datetime import date
 from fastapi import Query, APIRouter, Body
 
 from src.api.dependenies import PaginationDep
-from src.schemas.hotels import Hotel, HotelPATCH
-from src.database import async_session_maker
-from src.repositories.hotels import HotelsRepository
+from src.schemas.hotels import HotelPATCH
 from src.schemas.hotels import HotelAdd
 from src.api.dependenies import DBDep
 

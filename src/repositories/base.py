@@ -1,9 +1,9 @@
-from fastapi import HTTPException
 from sqlalchemy import select, insert, update, delete
+from sqlalchemy.orm import selectinload
+
+from schemas.rooms import RoomWithReal
 from src.database import engine
 from pydantic import BaseModel
-
-from src.schemas.users import User
 
 
 class BaseRepository:
@@ -31,12 +31,17 @@ class BaseRepository:
         return [self.schema.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
 
     async def get_one_or_none(self, **filter_by):
-        query = select(self.model).filter_by(**filter_by)
+        query = (
+            select(self.model)
+            .options(selectinload(self.model.facilities))
+            .filter_by(**filter_by)
+        )
+
         result = await self.session.execute(query)
         obj = result.scalars().one_or_none()
         if obj is None:
             return None
-        return self.schema.model_validate(obj, from_attributes=True)
+        return RoomWithReal.model_validate(obj, from_attributes=True)
 
     async def add(self, data: BaseModel):
         add_data_stmt = (

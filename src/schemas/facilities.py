@@ -5,7 +5,7 @@ class FacilitiesAdd(BaseModel):
     title: str
 
 
-class Facilities(FacilitiesAdd):
+class Facility(FacilitiesAdd):
     id: int
 
     class Config:

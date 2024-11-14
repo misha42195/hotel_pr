@@ -3,18 +3,17 @@ from datetime import date
 from fastapi import APIRouter
 from fastapi.params import Query
 
-from api.dependenies import DBDep
-from schemas.facilities import RoomFacilityAdd
-from src.database import async_session_maker
+from src.api.dependenies import DBDep
+from src.schemas.facilities import RoomFacilityAdd
+from src.schemas.rooms import RoomPatchRequest
 from fastapi import Body
 
-from src.repositories.rooms import RoomsRepository
-from src.schemas.rooms import RoomResponseAdd, RoomAdd, RoomPatch, RoomPut
+from src.schemas.rooms import RoomResponseAdd, RoomAdd, RoomPatch
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
 
 
-@router.get("/{hotel_id/rooms}", summary="Получение номера")
+@router.get("/{hotel_id/rooms}", summary="Получение номеров")
 async def get_rooms(
         hotel_id: int,
         db: DBDep,
@@ -65,27 +64,31 @@ async def full_edit_room(
         db: DBDep,
         room_data: RoomResponseAdd
 ):
-    _room_data = RoomPut(hotel_id=hotel_id, **room_data.model_dump())
-    await db.rooms.edite(
-        data=_room_data,
-        id=room_id)
-    await db.rooms.commit()
+    _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump())
+    await db.rooms.edite(data=_room_data, id=room_id)
+
+    await db.rooms_facilities.set_facilities(room_id=room_id, facilities_ids=room_data.facilities_ids)
+
+    await db.commit()
 
     return {"status": "ok"}
 
 
-@router.patch("/{hote_id}/rooms/{room_id}", summary="Частичное обновление номера")
-async def edir_room(
+@router.patch("/{hotel_id}/rooms/{room_id}", summary="Частичное обновление номера")
+async def edit_room(
         hotel_id: int,
         room_id: int,
         db: DBDep,
-        room_data: RoomResponseAdd
+        room_data: RoomPatchRequest
 ):
-    _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump())
-    await db.rooms.edite(
-        data=_room_data,
-        id=room_id)
-    await db.rooms.commit()
+    _room_data_dict = room_data.model_dump(exclude_unset=True)
+    _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
+
+    await db.rooms.edite(data=_room_data, id=room_id, hotel_id=hotel_id)
+    if "facilities_ids" in _room_data_dict:
+        await db.rooms_facilities.set_facilities(room_id=room_id, facilities_ids=_room_data_dict["facilities_ids"])
+
+    await db.commit()
 
     return {"status": "ok"}
 
@@ -100,4 +103,4 @@ async def delete_room(
         id=room_id,
         hotel_id=hotel_id)
     await db.rooms.commit()
-    return {"ststus": "ok"}
+    return {"status": "ok"}

@@ -1,12 +1,8 @@
 from datetime import date
-from datetime import date
 
 from sqlalchemy import select, func
-from sqlalchemy.sql.functions import coalesce
 
-from database import engine
 from models.bookings import BookingsOrm
-from models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
 
 
