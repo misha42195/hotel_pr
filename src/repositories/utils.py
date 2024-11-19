@@ -2,7 +2,7 @@ from datetime import date
 
 from sqlalchemy import select, func
 
-from models.bookings import BookingsOrm
+from src.models.bookings import BookingsOrm
 from src.models.rooms import RoomsOrm
 
 

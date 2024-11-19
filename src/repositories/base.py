@@ -1,14 +1,15 @@
+from fastapi import HTTPException
 from sqlalchemy import select, insert, update, delete
-from sqlalchemy.orm import selectinload
-
-from schemas.rooms import RoomWithReal
 from src.database import engine
 from pydantic import BaseModel
+
+from src.repositories.mappers.base import DataMapper
+from src.schemas.users import User
 
 
 class BaseRepository:
     model = None
-    schema: BaseModel = None
+    mapper: DataMapper = None
 
     def __init__(self, session):
         self.session = session
@@ -21,27 +22,22 @@ class BaseRepository:
         )
 
         result = await self.session.execute(query)
-        return [self.schema.model_validate(model) for model in result.scalars().all()]
+        return [self.mapper.mapper_to_domain_entity(model) for model in result.scalars().all()]
 
     async def get_all(self, *args, **kwargs):
         query = select(self.model)
         result = await self.session.execute(query)
         print(query.compile(engine, compile_kwargs={"literal_binds": True}))
 
-        return [self.schema.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        return [self.mapper.mapper_to_domain_entity(hotel) for hotel in result.scalars().all()]
 
     async def get_one_or_none(self, **filter_by):
-        query = (
-            select(self.model)
-            .options(selectinload(self.model.facilities))
-            .filter_by(**filter_by)
-        )
-
+        query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         obj = result.scalars().one_or_none()
         if obj is None:
             return None
-        return RoomWithReal.model_validate(obj, from_attributes=True)
+        return self.mapper.mapper_to_domain_entity(obj)
 
     async def add(self, data: BaseModel):
         add_data_stmt = (
@@ -53,7 +49,7 @@ class BaseRepository:
         result = await self.session.execute(add_data_stmt)
         model = result.scalars().one()
         print("model= ", model)
-        return self.schema.model_validate(model, from_attributes=True)
+        return self.mapper.mapper_to_domain_entity(model)
 
     async def add_bulk(self, data: list[BaseModel]):
         add_data_stmt = (

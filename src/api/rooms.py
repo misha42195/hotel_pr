@@ -35,7 +35,7 @@ async def get_room(
         db: DBDep,
 
 ):
-    room = await db.rooms.get_one_or_none(
+    room = await db.rooms.get_one_or_none_with_rels(
         id=room_id,
         hotel_id=hotel_id)
     return {"status": "ok", "room": room}

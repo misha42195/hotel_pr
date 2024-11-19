@@ -1,15 +1,16 @@
 from sqlalchemy import select, func
 
+from src.repositories.mappers.mappers import HotelsDataMapper
 from src.models.rooms import RoomsOrm
 from src.repositories.base import BaseRepository
 from src.models.hotels import HotelsOrm
-from src.schemas.hotels import Hotel
+
 from src.repositories.utils import rooms_id_for_booking
 
 
 class HotelsRepository(BaseRepository):
     model = HotelsOrm
-    schema = Hotel
+    mapper = HotelsDataMapper
 
     # async def get_all(self,
     #                   title,
@@ -59,4 +60,4 @@ class HotelsRepository(BaseRepository):
             .offset(offset)
         )
         result = await self.session.execute(query)
-        return [Hotel.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
+        return [self.mapper.mapper_to_domain_entity(hotel) for hotel in result.scalars().all()]

@@ -3,6 +3,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from src.repositories.mappers.mappers import RoomsDataMapper, RoomDataWithRealsMapper
 from src.repositories.utils import rooms_id_for_booking
 from src.schemas.rooms import RoomWithReal
 from src.models.rooms import RoomsOrm
@@ -12,7 +13,7 @@ from src.schemas.rooms import Room
 
 class RoomsRepository(BaseRepository):
     model = RoomsOrm
-    schema = Room
+    mapper = RoomsDataMapper
 
     async def get_all(self,
                       title,
@@ -47,3 +48,16 @@ class RoomsRepository(BaseRepository):
         )
         result = await self.session.execute(query)
         return [RoomWithReal.model_validate(model) for model in result.unique().scalars().all()]
+
+    async def get_one_or_none_with_rels(self, **filter_by):
+        query = (
+            select(self.model)
+            .options(selectinload(self.model.facilities))
+            .filter_by(**filter_by)
+        )
+
+        result = await self.session.execute(query)
+        obj = result.scalars().one_or_none()
+        if obj is None:
+            return None
+        return RoomDataWithRealsMapper.mapper(obj)
